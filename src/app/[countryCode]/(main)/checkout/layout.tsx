@@ -1,13 +1,11 @@
 export default function CheckoutLayout({
-    children,
+  children,
 }: {
-    children: React.ReactNode;
+  children: React.ReactNode;
 }) {
-    return (
-        <div className="w-full bg-white relative small:min-h-screen">
-            <div className="relative" data-testid="checkout-container">
-                {children}
-            </div>
-        </div>
-    );
+  return (
+    <div className="w-full bg-white relative small:min-h-screen">
+      <div className="relative">{children}</div>
+    </div>
+  );
 }
