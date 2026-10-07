@@ -1,246 +1,300 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// Polaris: a small multi-seller store. Postgres on Neon in production.
+//
+// Money is stored as integer cents throughout. The old schema used floats,
+// which is how a $34.30 cart total ended up hard-coded into cart creation.
 
 generator client {
-  provider = "prisma-client-js"
+    provider = "prisma-client"
+    output   = "../src/generated/prisma"
 }
 
 datasource db {
-  provider = "mongodb"
-  url      = env("DATABASE_URL")
+    provider = "postgresql"
 }
 
-// AUTHENTICATION MODELS
+// ---------------------------------------------------------------- auth
+// Field names follow Better Auth's core schema plus the admin plugin
+// (role, banned, banReason, banExpires, impersonatedBy).
+
 model User {
-  id            String   @id @default(cuid()) @map("_id")
-  name          String
-  email         String   @unique
-  emailVerified Boolean  @default(false)
-  image         String?
-  premium       Boolean  @default(false)
-  role          String   @default("user")
-  banned        Boolean  @default(false)
-  banReason     String?
-  banExpires    DateTime? /// Unix timestamp for ban expiration
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+    id            String    @id
+    name          String
+    email         String    @unique
+    emailVerified Boolean   @default(false)
+    image         String?
+    /// "user", "seller" or "admin". Managed by the Better Auth admin plugin.
+    role          String    @default("user")
+    banned        Boolean   @default(false)
+    banReason     String?
+    banExpires    DateTime?
+    /// Public shop name, set when a seller request is approved.
+    storeName     String?
+    createdAt     DateTime  @default(now())
+    updatedAt     DateTime  @updatedAt
 
-  sessions      Session[]
-  accounts      Account[]
-  Order         Order[]
-  SellerRequest SellerRequest[]
-  Product       Product[]
+    sessions      Session[]
+    accounts      Account[]
+    products      Product[]
+    orders        Order[]
+    soldItems     OrderItem[]    @relation("SellerItems")
+    sellerRequest SellerRequest?
+    cart          Cart?
 
-  Cart Cart[]
+    @@map("user")
 }
 
 model Session {
-  id             String   @id @default(cuid()) @map("_id")
-  userId         String
-  token          String   @unique
-  expiresAt      DateTime
-  ipAddress      String?
-  userAgent      String?
-  impersonatedBy String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+    id             String   @id
+    expiresAt      DateTime
+    token          String   @unique
+    createdAt      DateTime @default(now())
+    updatedAt      DateTime @updatedAt
+    ipAddress      String?
+    userAgent      String?
+    impersonatedBy String?
+    userId         String
+    user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+    @@index([userId])
+    @@map("session")
 }
 
 model Account {
-  id                    String    @id @default(cuid()) @map("_id")
-  userId                String
-  accountId             String
-  providerId            String
-  accessToken           String?
-  refreshToken          String?
-  accessTokenExpiresAt  DateTime?
-  refreshTokenExpiresAt DateTime?
-  scope                 String?
-  password              String?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+    id                    String    @id
+    accountId             String
+    providerId            String
+    userId                String
+    user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+    accessToken           String?
+    refreshToken          String?
+    idToken               String?
+    accessTokenExpiresAt  DateTime?
+    refreshTokenExpiresAt DateTime?
+    scope                 String?
+    password              String?
+    createdAt             DateTime  @default(now())
+    updatedAt             DateTime  @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+    @@index([userId])
+    @@map("account")
 }
 
 model Verification {
-  id         String   @id @default(cuid()) @map("_id")
-  identifier String
-  value      String
-  expiresAt  DateTime
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+    id         String   @id
+    identifier String
+    value      String
+    expiresAt  DateTime
+    createdAt  DateTime @default(now())
+    updatedAt  DateTime @updatedAt
+
+    @@index([identifier])
+    @@map("verification")
 }
 
+/// Better Auth's rate limiter. Stored in the database because serverless
+/// instances don't share memory.
+model RateLimit {
+    id          String @id
+    key         String @unique
+    count       Int
+    lastRequest BigInt
 
-// ORDER RELATED MODELS
-enum OrderStatus {
-  fulfilled
-  shipped
-  awaiting_shipment
+    @@map("rate_limit")
 }
 
-model Order {
-  id          String      @id @default(cuid()) @map("_id")
-  orderNumber String      @unique
-  amount      Float
-  isPaid      Boolean     @default(false)
-  status      OrderStatus @default(awaiting_shipment)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  cartAmount  Float
+// ---------------------------------------------------------------- catalogue
 
-  userId            String
-  user              User             @relation(fields: [userId], references: [id])
-  shippingAddressId String?
-  shippingAddress   ShippingAddress? @relation(fields: [shippingAddressId], references: [id])
-  billingAddressId  String?
-  billingAddress    BillingAddress?  @relation(fields: [billingAddressId], references: [id])
-
-  OrderItem OrderItem[]
+enum ProductStatus {
+    draft
+    active
+    archived
 }
 
-model OrderItem {
-  id        String   @id @default(cuid()) @map("_id")
-  orderId   String
-  productId String
-  variantId String
-  quantity  Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id])
-  variant Variant @relation(fields: [variantId], references: [id])
+/// Merchandising shelves on the home page. "On sale" is not one of these:
+/// a product is on sale whenever compareAtCents is above priceCents.
+enum Collection {
+    new_arrivals
+    weekly_picks
 }
 
-model ShippingAddress {
-  id          String  @id @default(cuid()) @map("_id")
-  name        String
-  street      String
-  city        String
-  postalCode  String
-  country     String
-  state       String?
-  phoneNumber String?
-
-  orders Order[]
-}
-
-model BillingAddress {
-  id          String  @id @default(cuid()) @map("_id")
-  name        String
-  street      String
-  city        String
-  postalCode  String
-  country     String
-  state       String?
-  phoneNumber String?
-
-  orders Order[]
-}
-
-// SELLER RELATED MODELS
-model SellerRequest {
-  id           String        @id @default(cuid()) @map("_id")
-  status       RequestStatus @default(pending)
-  denialReason String?
-  approvedAt   DateTime?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-enum RequestStatus {
-  pending
-  approved
-  denied
-}
-
-// PRODUCT RELATED MODELS
 model Product {
-  id          String   @id @default(cuid()) @map("_id")
-  name        String
-  routerName  String   @unique
-  description String
-  price       Float?
-  basePrice   Float
-  images      String[]
-  category    String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+    id             String        @id @default(cuid())
+    slug           String        @unique
+    name           String
+    description    String
+    /// Short facts shown as a list on the product page (material, fit, care).
+    details        String[]
+    /// One of the slugs in src/lib/catalog.ts.
+    category       String
+    collection     Collection?
+    status         ProductStatus @default(active)
+    /// What the customer pays.
+    priceCents     Int
+    /// The original price, shown struck through when it's higher.
+    compareAtCents Int?
+    sellerId       String
+    seller         User          @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+    createdAt      DateTime      @default(now())
+    updatedAt      DateTime      @updatedAt
 
-  collectionId String?
-  collection   Collection? @relation("ProductCollections", fields: [collectionId], references: [id])
-  userId       String
-  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+    images     ProductImage[]
+    variants   Variant[]
+    orderItems OrderItem[]
 
-  variants  Variant[]
-  CartItem  CartItem[]
-  OrderItem OrderItem[]
+    @@index([status, category])
+    @@index([sellerId])
+    @@map("product")
+}
+
+model ProductImage {
+    id        String  @id @default(cuid())
+    productId String
+    product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+    url       String
+    /// When set, the product page shows this image when that colour is picked.
+    color     String?
+    position  Int     @default(0)
+
+    @@index([productId, position])
+    @@map("product_image")
 }
 
 model Variant {
-  id    String @id @default(cuid()) @map("_id")
-  color String
-  size  String
-  stock Int
+    id        String  @id @default(cuid())
+    productId String
+    product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+    color     String
+    size      String
+    stock     Int     @default(0)
 
-  productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+    cartItems  CartItem[]
+    orderItems OrderItem[]
 
-  CartItem  CartItem[]
-  OrderItem OrderItem[]
+    @@unique([productId, color, size])
+    @@map("variant")
 }
 
-model Collection {
-  id          String         @id @default(cuid()) @map("_id")
-  name        String
-  description String?
-  type        CollectionType
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+// ---------------------------------------------------------------- cart
 
-  products Product[] @relation("ProductCollections")
-}
-
-enum CollectionType {
-  Sale
-  Seasonal
-  NewArrivals
-  WeeklyPicks
-}
-
-// CART RELATED MODELS
-model CartItem {
-  id        String   @id @default(cuid()) @map("_id")
-  quantity  Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  variantId String  @unique
-  variant   Variant @relation(fields: [variantId], references: [id])
-  cartId    String
-  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  productId String
-  product   Product @relation(fields: [productId], references: [id])
-}
-
+/// One cart per signed-in user, or per guest via an httpOnly cookie token.
+/// A guest cart is folded into the user's cart when they sign in.
 model Cart {
-  id        String   @id @default(cuid()) @map("_id")
-  userId    String   @unique
-  total     Float
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+    id        String     @id @default(cuid())
+    userId    String?    @unique
+    user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+    token     String?    @unique
+    createdAt DateTime   @default(now())
+    updatedAt DateTime   @updatedAt
+    items     CartItem[]
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+    @@map("cart")
+}
 
-  items CartItem[]
+model CartItem {
+    id        String   @id @default(cuid())
+    cartId    String
+    cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+    variantId String
+    variant   Variant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
+    quantity  Int
+    createdAt DateTime @default(now())
+
+    @@unique([cartId, variantId])
+    @@map("cart_item")
+}
+
+// ---------------------------------------------------------------- orders
+
+enum OrderStatus {
+    pending
+    paid
+    cancelled
+}
+
+enum Fulfillment {
+    unfulfilled
+    shipped
+    delivered
+}
+
+model Order {
+    id                    String      @id @default(cuid())
+    /// Human-friendly reference shown to customers, e.g. PL-7K2Q9M.
+    number                String      @unique
+    userId                String
+    user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+    email                 String
+    status                OrderStatus @default(pending)
+    subtotalCents         Int
+    shippingCents         Int
+    taxCents              Int
+    totalCents            Int
+    currency              String      @default("cad")
+    stripeSessionId       String?     @unique
+    stripePaymentIntentId String?
+    /// { name, line1, line2, city, state, postalCode, country, phone }
+    shippingAddress       Json?
+    paidAt                DateTime?
+    createdAt             DateTime    @default(now())
+    updatedAt             DateTime    @updatedAt
+
+    items OrderItem[]
+
+    @@index([userId, createdAt])
+    @@index([status, createdAt])
+    @@map("order")
+}
+
+/// Line items copy the product's name, image and price at the time of
+/// purchase, so editing or deleting a product never rewrites order history.
+/// Each seller fulfils their own lines.
+model OrderItem {
+    id             String      @id @default(cuid())
+    orderId        String
+    order          Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+    productId      String?
+    product        Product?    @relation(fields: [productId], references: [id], onDelete: SetNull)
+    variantId      String?
+    variant        Variant?    @relation(fields: [variantId], references: [id], onDelete: SetNull)
+    sellerId       String?
+    seller         User?       @relation("SellerItems", fields: [sellerId], references: [id], onDelete: SetNull)
+    name           String
+    slug           String
+    image          String?
+    color          String
+    size           String
+    unitPriceCents Int
+    quantity       Int
+    fulfillment    Fulfillment @default(unfulfilled)
+    shippedAt      DateTime?
+    deliveredAt    DateTime?
+
+    @@index([orderId])
+    @@index([sellerId])
+    @@map("order_item")
+}
+
+// ---------------------------------------------------------------- sellers
+
+enum RequestStatus {
+    pending
+    approved
+    denied
+}
+
+model SellerRequest {
+    id         String        @id @default(cuid())
+    userId     String        @unique
+    user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+    storeName  String
+    /// What they plan to sell, in their words.
+    pitch      String
+    status     RequestStatus @default(pending)
+    /// Shown to the applicant when a request is denied.
+    note       String?
+    reviewedAt DateTime?
+    createdAt  DateTime      @default(now())
+    updatedAt  DateTime      @updatedAt
+
+    @@map("seller_request")
 }

@@ -1,89 +1,101 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "tw-animate-css";
 
-/* Global font styles */
-body {
-    font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
-        "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+/*
+ * Polaris is named for the one star that stays put while the sky turns
+ * around it. The interface borrows that: a fixed, quiet frame that lets the
+ * products move. Almost everything we sell is black, white or bone and
+ * carries the same small peak mark, so the system is monochrome too:
+ *
+ *   paper   the page
+ *   studio  the sweep every product is photographed against
+ *   ink     type, rules and the dark chapters (announcement bar, footer)
+ *   signal  one warm accent, spent only on price reductions and errors
+ *
+ * Structure comes from hairline rules, a strict grid and type scale, never
+ * from cards or shadows. Corners are square to match the mark.
+ */
+
+@theme inline {
+    --color-paper: var(--paper);
+    --color-paper-2: var(--paper-2);
+    --color-studio: var(--studio);
+    --color-ink: var(--ink);
+    --color-ink-2: var(--ink-2);
+    --color-ink-soft: var(--ink-soft);
+    --color-ink-faint: var(--ink-faint);
+    --color-rule: var(--rule);
+    --color-rule-strong: var(--rule-strong);
+    --color-signal: var(--signal);
+    --color-signal-bright: var(--signal-bright);
+    --color-success: var(--success);
+    --color-on-ink: var(--on-ink);
+    --color-on-ink-soft: var(--on-ink-soft);
+    --color-on-ink-faint: var(--on-ink-faint);
+
+    /* shadcn-style semantic names, so the primitives read naturally. */
+    --color-background: var(--paper);
+    --color-foreground: var(--ink);
+    --color-muted: var(--paper-2);
+    --color-muted-foreground: var(--ink-soft);
+    --color-border: var(--rule);
+    --color-input: var(--rule-strong);
+    --color-ring: var(--ink);
+    --color-destructive: var(--signal);
+
+    --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+    --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+    --font-serif: var(--font-instrument-serif), Georgia, serif;
+
+    --radius-sm: 0px;
+    --radius-md: 0px;
+    --radius-lg: 0px;
+    --radius-xl: 0px;
+
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
+
+    --animate-marquee: marquee 40s linear infinite;
 }
 
-/* If using tailwind or custom classes, define styles like so */
-.font-sans {
-    font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
-        "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+:root {
+    --paper: #f5f4f0;
+    --paper-2: #ecebe6;
+    --studio: #e9e7e1;
+
+    --ink: #121212;
+    --ink-2: #1e1e1d;
+    /* 6.2:1 on paper. */
+    --ink-soft: #5c5b57;
+    /* Labels: 5.4:1 on paper and 4.8:1 on studio, both clear AA at 11px. */
+    --ink-faint: #66645e;
+
+    --rule: #d9d6cf;
+    --rule-strong: #b9b5ac;
+
+    /* 5.4:1 on paper as text; white on it is 5.9:1. */
+    --signal: #b8341a;
+    /* For the ink ground: 7.3:1. */
+    --signal-bright: #ff7a5c;
+    --success: #1d6b45;
+
+    --on-ink: #f5f4f0;
+    --on-ink-soft: #b5b3ac;
+    --on-ink-faint: #9a9891;
+
+    --header-height: 4rem;
+    --gutter: 1rem;
 }
 
-@layer utilities {
-    .text-balance {
-        text-wrap: balance;
-    }
-}
-
-/* .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-} */
-
-/* For IE, Edge and Firefox */
-/* .scrollbar-hide { */
-/* -ms-overflow-style: none; IE and Edge */
-/* scrollbar-width: none; Firefox */
-/* } */
-
-@layer base {
+@media (min-width: 640px) {
     :root {
-        --background: 0 0% 100%;
-        --foreground: 240 10% 3.9%;
-        --card: 0 0% 100%;
-        --card-foreground: 240 10% 3.9%;
-        --popover: 0 0% 100%;
-        --popover-foreground: 240 10% 3.9%;
-        --primary: 240 5.9% 10%;
-        --primary-foreground: 0 0% 98%;
-        --secondary: 240 4.8% 95.9%;
-        --secondary-foreground: 240 5.9% 10%;
-        --muted: 240 4.8% 95.9%;
-        --muted-foreground: 240 3.8% 46.1%;
-        --accent: 240 4.8% 95.9%;
-        --accent-foreground: 240 5.9% 10%;
-        --destructive: 0 84.2% 60.2%;
-        --destructive-foreground: 0 0% 98%;
-        --border: 240 5.9% 90%;
-        --input: 240 5.9% 90%;
-        --ring: 240 5.9% 10%;
-        --radius: 0.5rem;
-        --chart-1: 12 76% 61%;
-        --chart-2: 173 58% 39%;
-        --chart-3: 197 37% 24%;
-        --chart-4: 43 74% 66%;
-        --chart-5: 27 87% 67%;
+        --gutter: 1.5rem;
     }
+}
 
-    .dark {
-        --background: 240 10% 3.9%;
-        --foreground: 0 0% 98%;
-        --card: 240 10% 3.9%;
-        --card-foreground: 0 0% 98%;
-        --popover: 240 10% 3.9%;
-        --popover-foreground: 0 0% 98%;
-        --primary: 0 0% 98%;
-        --primary-foreground: 240 5.9% 10%;
-        --secondary: 240 3.7% 15.9%;
-        --secondary-foreground: 0 0% 98%;
-        --muted: 240 3.7% 15.9%;
-        --muted-foreground: 240 5% 64.9%;
-        --accent: 240 3.7% 15.9%;
-        --accent-foreground: 0 0% 98%;
-        --destructive: 0 62.8% 30.6%;
-        --destructive-foreground: 0 0% 98%;
-        --border: 240 3.7% 15.9%;
-        --input: 240 3.7% 15.9%;
-        --ring: 240 4.9% 83.9%;
-        --chart-1: 220 70% 50%;
-        --chart-2: 160 60% 45%;
-        --chart-3: 30 80% 55%;
-        --chart-4: 280 65% 60%;
-        --chart-5: 340 75% 55%;
+@media (min-width: 1024px) {
+    :root {
+        --gutter: 2.5rem;
     }
 }
 
@@ -91,7 +103,176 @@ body {
     * {
         @apply border-border;
     }
+
+    html {
+        -webkit-text-size-adjust: 100%;
+        text-rendering: optimizeLegibility;
+        scroll-padding-top: calc(var(--header-height) + 1.5rem);
+    }
+
     body {
-        @apply bg-background text-foreground;
+        @apply bg-paper font-sans text-ink antialiased;
+        min-height: 100dvh;
+        font-feature-settings: "ss01", "cv11";
+        font-synthesis-weight: none;
+    }
+
+    ::selection {
+        background: var(--ink);
+        color: var(--paper);
+    }
+
+    :focus-visible {
+        outline: 2px solid var(--ink);
+        outline-offset: 2px;
+    }
+
+    a,
+    button {
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    button:not(:disabled),
+    [role="button"]:not(:disabled) {
+        cursor: pointer;
+    }
+
+    /* Prices and counts line up in columns. */
+    .tabular {
+        font-variant-numeric: tabular-nums;
+    }
+}
+
+@layer components {
+    /* One container, one gutter rhythm. */
+    .shell {
+        @apply mx-auto w-full max-w-[1440px];
+        padding-inline: var(--gutter);
+    }
+
+    /*
+     * The micro label: section indices, badges, table heads. Monospaced and
+     * spaced out, the one piece of "catalogue" texture in the system.
+     */
+    .label {
+        @apply font-mono text-[0.6875rem] leading-none font-medium tracking-[0.14em] uppercase;
+    }
+
+    /* The serif is only ever an italic accent inside a sans headline. */
+    .accent {
+        font-family: var(--font-serif);
+        font-style: italic;
+        font-weight: 400;
+        letter-spacing: -0.01em;
+    }
+
+    /* The ground every product photo sits on. */
+    .studio {
+        background: var(--studio);
+    }
+
+    .link-underline {
+        text-decoration-line: underline;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 0.25em;
+        text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+        transition: text-decoration-color 160ms ease;
+    }
+
+    .link-underline:hover {
+        text-decoration-color: currentColor;
+    }
+
+    /* Horizontal shelves on small screens: swipe, snap, no scrollbar. */
+    .rail {
+        display: grid;
+        grid-auto-flow: column;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        scroll-snap-type: x mandatory;
+        /* Snap to the gutter, not the edge, or the first card loses its margin. */
+        scroll-padding-inline: var(--gutter);
+        scrollbar-width: none;
+    }
+
+    .rail::-webkit-scrollbar {
+        display: none;
+    }
+
+    .rail > * {
+        scroll-snap-align: start;
+    }
+
+    .sheet-viewport {
+        height: 100vh;
+        height: 100dvh;
+    }
+}
+
+@layer utilities {
+    .text-balance {
+        text-wrap: balance;
+    }
+
+    .text-pretty {
+        text-wrap: pretty;
+    }
+
+    /*
+     * Fluid type. The jump from body copy to display is the point, so the
+     * top end is large and set tight.
+     */
+    .type-display {
+        font-size: clamp(3rem, 9vw, 9.25rem);
+        line-height: 0.9;
+        letter-spacing: -0.05em;
+        font-weight: 500;
+    }
+
+    .type-title {
+        font-size: clamp(2.25rem, 4.8vw, 4.5rem);
+        line-height: 0.98;
+        letter-spacing: -0.04em;
+        font-weight: 500;
+    }
+
+    .type-heading {
+        font-size: clamp(1.625rem, 2.6vw, 2.5rem);
+        line-height: 1.05;
+        letter-spacing: -0.03em;
+        font-weight: 500;
+    }
+
+    .type-subheading {
+        font-size: clamp(1.25rem, 1.6vw, 1.5rem);
+        line-height: 1.2;
+        letter-spacing: -0.02em;
+        font-weight: 500;
+    }
+
+    .type-lead {
+        font-size: clamp(1.0625rem, 1.2vw, 1.25rem);
+        line-height: 1.55;
+        letter-spacing: -0.01em;
+    }
+}
+
+@keyframes marquee {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(-50%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
     }
 }

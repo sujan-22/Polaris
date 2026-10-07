@@ -1,16 +1,22 @@
-import { PrismaClient } from "@prisma/client";
+import "server-only";
 
-const prismaClientSingleton = () => {
-    return new PrismaClient();
+import { PrismaPg } from "@prisma/adapter-pg";
+
+import { PrismaClient } from "@/generated/prisma/client";
+
+function createClient() {
+    const connectionString = process.env.DATABASE_URL;
+    if (!connectionString) {
+        throw new Error("DATABASE_URL is not set. See .env.example.");
+    }
+    return new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+}
+
+// Reuse one client across hot reloads in development.
+const globalForPrisma = globalThis as unknown as {
+    prisma?: ReturnType<typeof createClient>;
 };
 
-declare const globalThis: {
-    prismaGlobal: ReturnType<typeof prismaClientSingleton>;
-} & typeof global;
+export const prisma = globalForPrisma.prisma ?? createClient();
 
-const prisma = globalThis.prismaGlobal ?? prismaClientSingleton();
-
-export default prisma;
-
-// Ensure the prisma instance is reused across hot reloads in development
-if (process.env.NODE_ENV !== "production") globalThis.prismaGlobal = prisma;
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;

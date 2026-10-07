@@ -1,86 +1,46 @@
-import * as React from "react";
-import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
+import { Slot } from "radix-ui";
+import type { ComponentProps } from "react";
 
 import { cn } from "@/lib/utils";
-import { BeatLoader } from "react-spinners";
-// import { useTheme } from "next-themes";
 
-const buttonVariants = cva(
-    "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
+/*
+ * Square, uppercase, tightly tracked: buttons read as labels on a garment
+ * tag rather than as pills. One filled style does the selling; the outline
+ * and ghost styles stay out of its way.
+ */
+export const buttonVariants = cva(
+    "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap font-medium uppercase tracking-[0.08em] transition-[background-color,color,border-color,opacity] duration-150 disabled:pointer-events-none disabled:opacity-45 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
     {
         variants: {
             variant: {
-                default:
-                    "bg-primary text-primary-foreground shadow hover:bg-primary/90",
-                destructive:
-                    "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
-                outline:
-                    "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
-                secondary:
-                    "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
-                ghost: "hover:bg-accent hover:text-accent-foreground",
-                link: "text-primary underline-offset-4 hover:underline",
+                primary: "bg-ink text-paper hover:bg-ink-2",
+                outline: "border border-ink text-ink hover:bg-ink hover:text-paper",
+                quiet: "border border-rule text-ink hover:border-ink",
+                ghost: "text-ink hover:bg-paper-2",
+                inverse: "bg-paper text-ink hover:bg-white",
+                "inverse-outline": "border border-on-ink-faint text-on-ink hover:border-on-ink hover:bg-on-ink hover:text-ink",
+                danger: "bg-signal text-white hover:bg-[#9e2c15]",
+                link: "h-auto px-0 normal-case tracking-normal text-ink underline decoration-1 underline-offset-4 hover:decoration-2",
             },
             size: {
-                default: "h-9 px-4 py-2",
-                sm: "h-8 rounded-md px-3 text-xs",
-                lg: "h-10 rounded-md px-8",
-                icon: "h-9 w-9",
+                sm: "h-9 px-3.5 text-[0.6875rem]",
+                md: "h-11 px-5 text-xs",
+                lg: "h-14 px-8 text-[0.8125rem]",
+                icon: "size-10",
+                "icon-sm": "size-8",
             },
         },
-        defaultVariants: {
-            variant: "default",
-            size: "default",
-        },
-    }
+        compoundVariants: [{ variant: "link", className: "h-auto px-0" }],
+        defaultVariants: { variant: "primary", size: "md" },
+    },
 );
 
-export interface ButtonProps
-    extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-        VariantProps<typeof buttonVariants> {
+export interface ButtonProps extends ComponentProps<"button">, VariantProps<typeof buttonVariants> {
     asChild?: boolean;
-    isLoading?: boolean;
-    loadingText?: string;
 }
 
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-    (
-        {
-            className,
-            loadingText,
-            isLoading,
-            variant,
-            size,
-            children,
-            asChild = false,
-            ...props
-        },
-        ref
-    ) => {
-        // const { theme } = useTheme();
-        // const isDark = theme === "dark";
-        const Comp = asChild ? Slot : "button";
-        return (
-            <Comp
-                className={cn(buttonVariants({ variant, size, className }))}
-                ref={ref}
-                {...props}
-            >
-                {isLoading && loadingText ? loadingText : children}
-                {isLoading ? (
-                    <span className="ml-1.5 flex items-center gap-1">
-                        <BeatLoader
-                            margin={1}
-                            // color={isDark ? "black" : "white"}
-                            size={8}
-                        />
-                    </span>
-                ) : null}
-            </Comp>
-        );
-    }
-);
-Button.displayName = "Button";
-
-export { Button, buttonVariants };
+export function Button({ className, variant, size, asChild = false, ...props }: ButtonProps) {
+    const Comp = asChild ? Slot.Root : "button";
+    return <Comp data-slot="button" className={cn(buttonVariants({ variant, size }), className)} {...props} />;
+}
