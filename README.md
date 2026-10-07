@@ -20,7 +20,7 @@ Next.js 16 (App Router, Cache Components, Turbopack) · React 19 · TypeScript �
 
 ## Run it locally
 
-You need Node 22.12 or newer and Docker.
+You need Node 24 and Docker.
 
 ```bash
 npm install
