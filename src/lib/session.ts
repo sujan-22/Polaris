@@ -48,9 +48,11 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
 /*
  * Reads the session straight from the database. Used wherever a role
  * decides access, so an approval, a demotion or a ban applies on the very
- * next request rather than when the cookie cache expires.
+ * next request rather than when the cookie cache expires. The sign-in pages
+ * use it too: a revoked session can outlive its cookie cache by minutes, and
+ * trusting the cache there bounced people between sign-in and /account.
  */
-const getFreshUser = cache(async (): Promise<CurrentUser | null> => {
+export const getFreshUser = cache(async (): Promise<CurrentUser | null> => {
     await connection();
     const session = await auth.api.getSession({
         headers: await headers(),

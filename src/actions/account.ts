@@ -48,7 +48,13 @@ export async function changePassword(_: FormState, form: FormData): Promise<Form
         .safeParse({ currentPassword: form.get("currentPassword"), newPassword: form.get("newPassword") });
     if (!parsed.success) return { errors: z.flattenError(parsed.error).fieldErrors };
     try {
-        await auth.api.changePassword({ body: { ...parsed.data, revokeOtherSessions: true }, headers: await headers() });
+        const requestHeaders = await headers();
+        // Better Auth's own revokeOtherSessions replaces the current session
+        // too, and this request's re-render still carries the old cookie, so
+        // the page would bounce through sign-in. Keep this session and sign
+        // out only the others.
+        await auth.api.changePassword({ body: { ...parsed.data, revokeOtherSessions: false }, headers: requestHeaders });
+        await auth.api.revokeOtherSessions({ headers: requestHeaders });
     } catch (error) {
         return failure(error, "Couldn't change your password.");
     }

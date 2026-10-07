@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { AuthForm } from "@/components/auth/auth-form";
-import { getCurrentUser } from "@/lib/session";
+import { getFreshUser } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Sign in", robots: { index: false } };
 
@@ -25,6 +25,6 @@ export default function Page({ searchParams }: PageProps<"/sign-in">) {
 async function Form({ searchParams }: Pick<PageProps<"/sign-in">, "searchParams">) {
     const raw = (await searchParams).next;
     const next = typeof raw === "string" && raw.startsWith("/") && !raw.startsWith("//") ? raw : undefined;
-    if (await getCurrentUser()) redirect(next ?? "/account");
+    if (await getFreshUser()) redirect(next ?? "/account");
     return <AuthForm mode="sign-in" next={next} />;
 }
