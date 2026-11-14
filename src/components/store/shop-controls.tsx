@@ -43,7 +43,7 @@ export function SortMenu({ current, options }: { current: SortKey; options: { so
             <MenuContent align="end">
                 {options.map((option) => (
                     <MenuItem key={option.sort} asChild>
-                        <Link href={option.href} scroll={false}>
+                        <Link href={option.href} scroll={false} rel="nofollow">
                             <span className="w-4">{option.sort === current ? <Check aria-hidden /> : null}</span>
                             {SORTS[option.sort]}
                         </Link>

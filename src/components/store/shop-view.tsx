@@ -162,6 +162,7 @@ function FilterPanel({ base, params, facets }: { base: string; params: ShopParam
                                 <Link
                                     href={shopHref(base, params, { shelf })}
                                     aria-current={active ? "true" : undefined}
+                                    rel="nofollow"
                                     className={cn("flex items-center gap-2.5 py-1 text-[0.9375rem]", active ? "text-ink" : "text-ink-soft hover:text-ink")}
                                 >
                                     <span className={cn("size-1.5", active ? "bg-ink" : "bg-transparent")} aria-hidden />
@@ -183,6 +184,7 @@ function FilterPanel({ base, params, facets }: { base: string; params: ShopParam
                                     <Link
                                         href={shopHref(base, params, { colors: toggle(params.colors, color) })}
                                         aria-current={active ? "true" : undefined}
+                                        rel="nofollow"
                                         className={cn("flex items-center gap-2.5 py-1 text-[0.9375rem]", active ? "text-ink" : "text-ink-soft hover:text-ink")}
                                     >
                                         <span
@@ -211,6 +213,7 @@ function FilterPanel({ base, params, facets }: { base: string; params: ShopParam
                                     <Link
                                         href={shopHref(base, params, { sizes: toggle(params.sizes, size) })}
                                         aria-current={active ? "true" : undefined}
+                                        rel="nofollow"
                                         className={cn(
                                             "tabular inline-flex h-9 min-w-10 items-center justify-center border px-2.5 text-sm transition-colors",
                                             active ? "border-ink bg-ink text-paper" : "border-rule text-ink hover:border-ink",
@@ -246,7 +249,7 @@ function ActiveFilters({ base, params }: { base: string; params: ShopParams }) {
     return (
         <div className="mt-5 flex flex-wrap items-center gap-2">
             {chips.map((chip) => (
-                <Link key={chip.label} href={chip.href} className="inline-flex h-8 items-center gap-1.5 bg-paper-2 pr-2 pl-3 text-sm hover:bg-rule">
+                <Link key={chip.label} href={chip.href} rel="nofollow" className="inline-flex h-8 items-center gap-1.5 bg-paper-2 pr-2 pl-3 text-sm hover:bg-rule">
                     {chip.label}
                     <X className="size-3.5" aria-label="Remove" />
                 </Link>

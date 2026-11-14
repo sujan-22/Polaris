@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+
 import { COLOR_NAMES, SORTS, type SortKey } from "@/lib/catalog";
 
 /*
@@ -59,3 +61,13 @@ export const SHELF_NAMES: Record<ShelfParam, string> = {
     picks: "Weekly picks",
     sale: "Sale",
 };
+
+/*
+ * A filtered or sorted view points search engines at its unfiltered page and
+ * asks not to be indexed, so crawlers don't treat every combination of
+ * filters as a page of its own.
+ */
+export function filteredViewMetadata(path: string, raw: RawParams): Pick<Metadata, "alternates" | "robots"> {
+    const filtered = Object.values(raw).some((value) => value !== undefined);
+    return { alternates: { canonical: path }, ...(filtered ? { robots: { index: false, follow: false } } : {}) };
+}
